@@ -22,44 +22,108 @@ sub datetimestamp
 #################################################################
 # subroutine to get primary accession number of protein
 #################################################################
-sub get_protein_id {
+sub get_id_n_accession {
 	my ( $line ) = @_ ;
 	chomp $line ;
 	# IF-ELSIF LOOPS to capture proteins ids (gi/swissprot/uniprot ids)
-	my ( @arr , $id , $arr );
+	my ( @arr , $id , $desc);
 	if (($line=~/^gi/)||($line=~/^decoy_gi/))#this captures GI-id of a protein
         {
                 @arr = split (/\|/,$line);
                 $id=$arr[0]."|".$arr[1];
-                #$id =~s/>//;
+		shift @arr;shift @arr;
+		$desc=join"|",@arr;
         }
 	elsif (($line=~/^sp/)||($line=~/^decoy_sp/))#this captures Swissprot ID
         {
                 @arr = split (/\|/,$line);
                 $id=$arr[0]."|".$arr[1];
-                #$id =~s/>//;
+		shift @arr;shift @arr;
+		$desc=join"|",@arr;
         }
 	# this is for parsing out IPI protein ids
 	elsif (($line=~/^IPI/)||($line=~/^decoy_IPI/))
         {
                 @arr = split (/\|/,$line);
                 $id=$arr[0]."|".$arr[1];
-                #$id =~s/>//;
+		shift @arr;shift @arr;
+		$desc=join "|",@arr;
         }
-	else
-        {
-                @arr = split (/\||\s/,$line);
-		if (defined$arr[1])
+	elsif($line=~/\|/)
+	{
+		@arr = split (/\|/,$line);
+                $id=$arr[0]."|".$arr[1];
+		shift @arr;shift @arr;
+		$desc=join "|",@arr;		
+	}
+	elsif($line=~/Contaminant/)
+	{
+		if ($line=~/\|/)
 		{
-			$id=$arr[0]."|".$arr[1];
+			@arr = split (/\|/,$line);
+			#check if 2nd el has some value
+			if (!defined$arr[1])
+			{
+				$id=$arr[0];
+				shift @arr;
+				$desc=join " ",@arr;	
+			}
+			else
+			{
+			
+				#print scalar(@arr)," el\n";<>;
+				#print join"\n",@arr;<>;
+				$id=$arr[0]."|".$arr[1];
+				shift @arr;shift @arr;
+				$desc=join "|",@arr;
+			}
 		}
 		else
 		{
-			 $id=$arr[0];
+			@arr = split (/\s/,$line);
+			#check if 2nd el has some value
+			if (!defined$arr[1])
+			{
+				$id=$arr[0];
+				shift @arr;
+				$desc=join " ",@arr;	
+			}
+			else
+			{
+			
+				#print scalar(@arr)," el\n";<>;
+				#print join"\n",@arr;<>;
+				$id=$arr[0]." ".$arr[1];
+				shift @arr;shift @arr;
+				$desc=join " ",@arr;
+			}
 		}
-        }
-
-	return $id;
+	}
+	else
+        {
+                @arr = split (/\||\s+/,$line);
+		if (defined $arr[1])
+		{
+			$id=$arr[0];#."|".$arr[1];
+			shift @arr;#shift @arr;
+			$desc=join" ",@arr;
+		}
+		else
+		{
+			$id=$arr[0];
+			shift @arr;
+			$desc=join" ",@arr;
+		}
+	}
+	
+	#When no description, make id as description too
+	if ( (!defined $desc) || ($desc eq '') || ($desc eq ' ') )
+	{
+		$desc=$id;
+	}
+	
+	#print "$line:--\n...\t$id\n...\t$desc\n\n";<>;
+	return ($id,$desc);
 }
 
 
@@ -122,7 +186,7 @@ sub read_fasta_hash_index{
 }
 
 ####################################################################
-#Read FASTA file as an Array
+#Read FASTA file as an Array, Each element is one header+multiline Sequence
 ####################################################################
 sub read_fasta_array{
 	my($fasta)=@_;
@@ -149,20 +213,25 @@ sub FetchSeqID{
 	return ($prot_id,$protein);
 }
 ####################################################################
-# Get Protein Description from Accession
+# Get Protein AccID & Description from Accession header line
 ####################################################################
 sub get_accession_description{
 	my($header)=@_;
+	print "\$header=$header\n";
 	if ($header=~m/\|/)
 	{
-                $header=~m/^(.+)\|(.+)$/;
+                $header=~m/^(.+\|.+)\|(\w+)$/;
+		my $id=$1;
+		print "\t\$1=$1\n\t\$2=$2\n\n";<>;
                 return($1,$2);
+		
 	}
 	else
 	{
-                my @arr=split" ",$header;
+                my @arr=split(/\s+/,$header);
                 my $acc=shift @arr;
                 my $desc=join " ",@arr;
+		print "\t\$acc=$acc\n\t\$desc=$desc\n\n";<>;
                 return($acc,$desc);
 	}
 }
