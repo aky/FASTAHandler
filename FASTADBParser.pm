@@ -3,8 +3,8 @@ use strict;
 use warnings;
 
 #########################################################
-# AMIT KUMAR YADAV (amit.yadav@igib.in)
-# Updated 10 Aug 2013 Amit
+# AMIT KUMAR YADAV (amit.yadav@thsti.res.in)
+# Updated 28 April, 2023 Amit
 #########################################################
 # Moved timestamp and decoy subroutines here
 # from Configreader & pepmass modules. Pepmass deleted.
